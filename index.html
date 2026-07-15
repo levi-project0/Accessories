@@ -444,6 +444,14 @@
       <button class="back-btn" id="accessoryModeBack">→ رجوع</button>
     </div>
 
+    <!-- STEP 2 (التطبيقات المستخدمة only): app title + link, no file upload -->
+    <div id="appLinkArea" style="display:none;">
+      <input class="field" id="appNameInput" placeholder="عنوان التطبيق">
+      <input class="field" id="appLinkInput" placeholder="الرابط" style="margin-top:10px;">
+      <button class="primary-btn" id="appLinkSubmitBtn" style="margin-top:10px;">نشر</button>
+      <button class="back-btn" id="appLinkBack">→ رجوع</button>
+    </div>
+
     <!-- STEP 3 (group mode only): name the group before picking files -->
     <div id="groupNameArea" style="display:none;">
       <input class="field" id="groupNameInput" placeholder="اسم المجموعة">
@@ -910,6 +918,9 @@ function resetUploadUI(){
   document.getElementById('accessoryModeButtons').style.display = 'none';
   document.getElementById('groupNameArea').style.display = 'none';
   document.getElementById('groupNameInput').value = '';
+  document.getElementById('appLinkArea').style.display = 'none';
+  document.getElementById('appNameInput').value = '';
+  document.getElementById('appLinkInput').value = '';
   document.getElementById('uploadStepSub').textContent = 'اختر نوع الملف ثم حدده من جهازك';
   document.querySelectorAll('.upload-btn').forEach(b=>b.classList.remove('selected'));
 }
@@ -935,8 +946,10 @@ document.querySelectorAll('#mainUploadButtons .upload-btn').forEach(btn=>{
       document.getElementById('accessoryModeButtons').style.display = 'flex';
       document.getElementById('uploadStepSub').textContent = 'اختر طريقة الرفع';
     } else {
-      // التطبيقات المستخدمة: رفع مباشر، ملفات apk فقط
-      openFilePicker({ accept: '.apk', multiple: false });
+      // التطبيقات المستخدمة: عنوان + رابط، بدون رفع ملف
+      document.getElementById('mainUploadButtons').style.display = 'none';
+      document.getElementById('appLinkArea').style.display = 'block';
+      document.getElementById('uploadStepSub').textContent = 'اكتب عنوان التطبيق والرابط';
     }
   });
 });
@@ -957,6 +970,36 @@ document.getElementById('groupItemsBtn').addEventListener('click', ()=>{
 
 document.getElementById('accessoryModeBack').addEventListener('click', ()=>{
   resetUploadUI();
+});
+
+document.getElementById('appLinkBack').addEventListener('click', ()=>{
+  resetUploadUI();
+});
+
+document.getElementById('appLinkSubmitBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('appNameInput').value.trim();
+  const link = document.getElementById('appLinkInput').value.trim();
+  const status = document.getElementById('uploadStatus');
+  if(!name || !link){
+    alert('الرجاء كتابة عنوان التطبيق والرابط قبل النشر');
+    return;
+  }
+  try{
+    status.textContent = 'جاري النشر...';
+    await db.collection('reels').add({
+      name: name,
+      url: link,
+      thumbUrl: null,
+      size: 0,
+      date: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    status.textContent = `تم نشر "${name}" ضمن التطبيقات المستخدمة بنجاح`;
+    await refreshCounts();
+    setTimeout(()=>{ resetUploadUI(); showView('home'); status.textContent=''; }, 900);
+  }catch(err){
+    console.error(err);
+    status.textContent = 'حدث خطأ أثناء النشر، حاول مرة أخرى';
+  }
 });
 
 document.getElementById('groupNameBack').addEventListener('click', ()=>{
