@@ -444,9 +444,10 @@
       <button class="back-btn" id="accessoryModeBack">→ رجوع</button>
     </div>
 
-    <!-- STEP 2 (التطبيقات المستخدمة only): app title + link, no file upload -->
+    <!-- STEP 2 (التطبيقات المستخدمة only): app image + title + link, no file upload -->
     <div id="appLinkArea" style="display:none;">
-      <input class="field" id="appNameInput" placeholder="عنوان التطبيق">
+      <input class="field" id="appImageInput" placeholder="رابط صورة التطبيق (اختياري)">
+      <input class="field" id="appNameInput" placeholder="عنوان التطبيق" style="margin-top:10px;">
       <input class="field" id="appLinkInput" placeholder="الرابط" style="margin-top:10px;">
       <button class="primary-btn" id="appLinkSubmitBtn" style="margin-top:10px;">نشر</button>
       <button class="back-btn" id="appLinkBack">→ رجوع</button>
@@ -919,6 +920,7 @@ function resetUploadUI(){
   document.getElementById('groupNameArea').style.display = 'none';
   document.getElementById('groupNameInput').value = '';
   document.getElementById('appLinkArea').style.display = 'none';
+  document.getElementById('appImageInput').value = '';
   document.getElementById('appNameInput').value = '';
   document.getElementById('appLinkInput').value = '';
   document.getElementById('uploadStepSub').textContent = 'اختر نوع الملف ثم حدده من جهازك';
@@ -949,7 +951,7 @@ document.querySelectorAll('#mainUploadButtons .upload-btn').forEach(btn=>{
       // التطبيقات المستخدمة: عنوان + رابط، بدون رفع ملف
       document.getElementById('mainUploadButtons').style.display = 'none';
       document.getElementById('appLinkArea').style.display = 'block';
-      document.getElementById('uploadStepSub').textContent = 'اكتب عنوان التطبيق والرابط';
+      document.getElementById('uploadStepSub').textContent = 'أضف صورة التطبيق (اختياري) ثم العنوان والرابط';
     }
   });
 });
@@ -977,6 +979,7 @@ document.getElementById('appLinkBack').addEventListener('click', ()=>{
 });
 
 document.getElementById('appLinkSubmitBtn').addEventListener('click', async ()=>{
+  const image = document.getElementById('appImageInput').value.trim();
   const name = document.getElementById('appNameInput').value.trim();
   const link = document.getElementById('appLinkInput').value.trim();
   const status = document.getElementById('uploadStatus');
@@ -989,7 +992,7 @@ document.getElementById('appLinkSubmitBtn').addEventListener('click', async ()=>
     await db.collection('reels').add({
       name: name,
       url: link,
-      thumbUrl: null,
+      thumbUrl: image || null,
       size: 0,
       date: firebase.firestore.FieldValue.serverTimestamp()
     });
