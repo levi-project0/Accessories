@@ -444,9 +444,13 @@
       <button class="back-btn" id="accessoryModeBack">→ رجوع</button>
     </div>
 
-    <!-- STEP 2 (التطبيقات المستخدمة only): app image + title + link, no file upload -->
+    <!-- STEP 2 (التطبيقات المستخدمة only): app image upload + title + link -->
     <div id="appLinkArea" style="display:none;">
-      <input class="field" id="appImageInput" placeholder="رابط صورة التطبيق (اختياري)">
+      <button class="upload-btn" id="appImagePickBtn" style="width:100%;">اختر صورة التطبيق (اختياري)</button>
+      <input type="file" id="appImageFileInput" hidden accept="image/*">
+      <div id="appImagePreviewWrap" style="display:none; margin-top:10px; text-align:center;">
+        <img id="appImagePreview" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:12px;">
+      </div>
       <input class="field" id="appNameInput" placeholder="عنوان التطبيق" style="margin-top:10px;">
       <input class="field" id="appLinkInput" placeholder="الرابط" style="margin-top:10px;">
       <button class="primary-btn" id="appLinkSubmitBtn" style="margin-top:10px;">نشر</button>
@@ -910,6 +914,7 @@ document.addEventListener('click', (e)=>{
 // ---------- UPLOAD FLOW STATE ----------
 let currentUploadGroupName = null; // set when uploading a group of items together
 let currentUploadGroupId = null;   // shared id linking all items uploaded in one group batch
+let appImageUrl = null;            // uploaded app icon url (التطبيقات المستخدمة)
 
 function resetUploadUI(){
   currentUploadType = null;
@@ -920,7 +925,10 @@ function resetUploadUI(){
   document.getElementById('groupNameArea').style.display = 'none';
   document.getElementById('groupNameInput').value = '';
   document.getElementById('appLinkArea').style.display = 'none';
-  document.getElementById('appImageInput').value = '';
+  appImageUrl = null;
+  document.getElementById('appImageFileInput').value = '';
+  document.getElementById('appImagePreviewWrap').style.display = 'none';
+  document.getElementById('appImagePreview').src = '';
   document.getElementById('appNameInput').value = '';
   document.getElementById('appLinkInput').value = '';
   document.getElementById('uploadStepSub').textContent = 'اختر نوع الملف ثم حدده من جهازك';
@@ -978,8 +986,30 @@ document.getElementById('appLinkBack').addEventListener('click', ()=>{
   resetUploadUI();
 });
 
+document.getElementById('appImagePickBtn').addEventListener('click', ()=>{
+  document.getElementById('appImageFileInput').click();
+});
+
+document.getElementById('appImageFileInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  const status = document.getElementById('uploadStatus');
+  if(!file) return;
+  try{
+    status.textContent = 'جاري رفع الصورة... 0%';
+    const result = await uploadToCloudinary(file, 'reels', (pct)=>{
+      status.textContent = `جاري رفع الصورة... ${pct}%`;
+    });
+    appImageUrl = result.secure_url;
+    document.getElementById('appImagePreview').src = appImageUrl;
+    document.getElementById('appImagePreviewWrap').style.display = 'block';
+    status.textContent = 'تم رفع الصورة بنجاح';
+  }catch(err){
+    console.error(err);
+    status.textContent = 'حدث خطأ أثناء رفع الصورة، حاول مرة أخرى';
+  }
+});
+
 document.getElementById('appLinkSubmitBtn').addEventListener('click', async ()=>{
-  const image = document.getElementById('appImageInput').value.trim();
   const name = document.getElementById('appNameInput').value.trim();
   const link = document.getElementById('appLinkInput').value.trim();
   const status = document.getElementById('uploadStatus');
@@ -992,7 +1022,7 @@ document.getElementById('appLinkSubmitBtn').addEventListener('click', async ()=>
     await db.collection('reels').add({
       name: name,
       url: link,
-      thumbUrl: image || null,
+      thumbUrl: appImageUrl || null,
       size: 0,
       date: firebase.firestore.FieldValue.serverTimestamp()
     });
