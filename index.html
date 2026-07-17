@@ -562,9 +562,14 @@ const db = firebase.firestore();
 // (من Cloudinary Dashboard: اسم الحساب Cloud name، ومن
 // Settings → Upload → Upload presets → أنشئ preset بوضع Unsigned)
 // ============================================================
-const CLOUDINARY_CLOUD_NAME = "gti197df";
-const CLOUDINARY_UPLOAD_PRESET = "Accessories";
+const CLOUDINARY_CLOUD_NAME = "huvtba7n";
+const CLOUDINARY_UPLOAD_PRESET = "iyzgmjna";
 // ============================================================
+// معرّف فريد لهذا الموقع — يُستخدم لعزل بياناته في Firestore عن
+// أي موقع آخر يستعمل نفس مشروع Firebase، حتى لا يظهر منشور
+// من موقع في الموقع الآخر
+// ============================================================
+const SITE_ID = "site_index1";
 
 let SECRET_WORD = "بونوار"; // القيمة الافتراضية، تُستبدل بالقيمة المحفوظة في Firestore عند تحميل الصفحة
 const SETTINGS_CODE = "0645225409";
@@ -577,7 +582,7 @@ let cachedFiles = { video: [], reels: [] }; // يستخدم في البحث ال
 
 async function loadSecretWord(){
   try{
-    const doc = await db.collection('config').doc('settings').get();
+    const doc = await db.collection('config').doc(SITE_ID + '_settings').get();
     if(doc.exists){
       const data = doc.data();
       if(data.secretWord) SECRET_WORD = data.secretWord;
@@ -597,7 +602,7 @@ function showView(id){
 
 async function getList(type){
   try{
-    const snap = await db.collection(type).orderBy('date','asc').get();
+    const snap = await db.collection(SITE_ID + '_' + type).orderBy('date','asc').get();
     return snap.docs.map(d=>{
       const data = d.data();
       return {
@@ -672,7 +677,7 @@ async function uploadFile(file, type, onStatus, group){
     doc.groupName = group.name;
   }
 
-  await db.collection(type).add(doc);
+  await db.collection(SITE_ID + '_' + type).add(doc);
 }
 
 function formatSize(bytes){
@@ -1019,7 +1024,7 @@ document.getElementById('appLinkSubmitBtn').addEventListener('click', async ()=>
   }
   try{
     status.textContent = 'جاري النشر...';
-    await db.collection('reels').add({
+    await db.collection(SITE_ID + '_reels').add({
       name: name,
       url: link,
       thumbUrl: appImageUrl || null,
@@ -1101,7 +1106,7 @@ document.getElementById('saveSecretBtn').addEventListener('click', async ()=>{
     return;
   }
   try{
-    await db.collection('config').doc('settings').set({ secretWord: newWord }, { merge: true });
+    await db.collection('config').doc(SITE_ID + '_settings').set({ secretWord: newWord }, { merge: true });
     SECRET_WORD = newWord;
     status.textContent = 'تم حفظ كلمة السر الجديدة بنجاح';
   }catch(e){
@@ -1148,7 +1153,7 @@ async function loadManageList(type){
       const trimmed = newName.trim();
       if(!trimmed || trimmed === f.name) return;
       try{
-        await db.collection(type).doc(f.id).update({ name: trimmed });
+        await db.collection(SITE_ID + '_' + type).doc(f.id).update({ name: trimmed });
         await loadManageList(type);
       }catch(err){
         console.error(err);
@@ -1159,7 +1164,7 @@ async function loadManageList(type){
       ev.stopPropagation();
       if(!confirm(`هل تريد حذف "${f.name}"؟`)) return;
       try{
-        await db.collection(type).doc(f.id).delete();
+        await db.collection(SITE_ID + '_' + type).doc(f.id).delete();
         await loadManageList(type);
         await refreshCounts();
       }catch(err){
@@ -1227,7 +1232,7 @@ document.getElementById('competitionFileInput').addEventListener('change', async
       ? cloudinaryVideoThumbnail(mainUrl)
       : mainUrl;
 
-    await db.collection('competition').add({
+    await db.collection(SITE_ID + '_competition').add({
       participantName: competitionName,
       name: file.name,
       size: file.size,
@@ -1254,7 +1259,7 @@ async function loadCompetitionAdminList(){
   const container = document.getElementById('competitionAdminList');
   container.innerHTML = '<div class="empty-state">جاري التحميل...</div>';
   try{
-    const snap = await db.collection('competition').orderBy('date','desc').get();
+    const snap = await db.collection(SITE_ID + '_competition').orderBy('date','desc').get();
     container.innerHTML = '';
     if(snap.empty){
       container.innerHTML = '<div class="empty-state">لا توجد مشاركات بعد.</div>';
@@ -1279,7 +1284,7 @@ async function loadCompetitionAdminList(){
         ev.stopPropagation();
         if(!confirm(`هل تريد حذف مشاركة "${data.participantName}"؟`)) return;
         try{
-          await db.collection('competition').doc(d.id).delete();
+          await db.collection(SITE_ID + '_competition').doc(d.id).delete();
           await loadCompetitionAdminList();
         }catch(err){
           console.error(err);
@@ -1304,7 +1309,7 @@ document.getElementById('saveCompetitionWordBtn').addEventListener('click', asyn
     return;
   }
   try{
-    await db.collection('config').doc('settings').set({ competitionWord: newWord }, { merge: true });
+    await db.collection('config').doc(SITE_ID + '_settings').set({ competitionWord: newWord }, { merge: true });
     COMPETITION_WORD = newWord;
     status.textContent = 'تم حفظ كلمة سر صفحة المسابقة بنجاح';
   }catch(e){
@@ -1321,7 +1326,7 @@ document.getElementById('saveCompetitionAdminBtn').addEventListener('click', asy
     return;
   }
   try{
-    await db.collection('config').doc('settings').set({ competitionAdminWord: newWord }, { merge: true });
+    await db.collection('config').doc(SITE_ID + '_settings').set({ competitionAdminWord: newWord }, { merge: true });
     COMPETITION_ADMIN_WORD = newWord;
     status.textContent = 'تم حفظ كلمة السر بنجاح';
   }catch(e){
